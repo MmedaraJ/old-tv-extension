@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CRT TV Frame</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>CRT TV Frame</h1>
+    <label class="switch" title="Turn the frame on or off everywhere">
+      <input type="checkbox" id="enabled">
+      <span></span>
+    </label>
+  </header>
+
+  <div id="preview" aria-hidden="true">
+    <div id="picture"></div>
+    <div id="previewFrame"></div>
+  </div>
+
+  <section>
+    <div class="row">
+      <span>On <b id="site">this site</b></span>
+      <label class="switch small">
+        <input type="checkbox" id="siteOn">
+        <span></span>
+      </label>
+    </div>
+
+    <div class="label">Cabinet</div>
+    <div id="themes" class="themes"></div>
+
+    <div class="row slider">
+      <label for="size">Frame size</label>
+      <input type="range" id="size" min="0.4" max="2" step="0.05">
+    </div>
+    <div class="row slider">
+      <label for="scanlines">Scanlines</label>
+      <input type="range" id="scanlines" min="0" max="100" step="1">
+    </div>
+
+    <div class="row">
+      <label for="glass">Curved glass &amp; glare</label>
+      <label class="switch small"><input type="checkbox" id="glass"><span></span></label>
+    </div>
+    <div class="row">
+      <label for="panel">Knob panel when there's room</label>
+      <label class="switch small"><input type="checkbox" id="panel"><span></span></label>
+    </div>
+
+    <div class="row">
+      <label for="label">Badge text</label>
+      <input type="text" id="label" maxlength="24" spellcheck="false">
+    </div>
+  </section>
+
+  <footer>Bigger frames shrink the picture a little to make room.</footer>
+
+  <script src="frame.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
