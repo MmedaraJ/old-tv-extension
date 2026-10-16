@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const { DEFAULTS, THEMES, computeLayout, buildSVG } = globalThis.CRTFrame;
+  const { DEFAULTS, THEMES, computeLayout, buildSVG, render: renderSVG } = globalThis.CRTFrame;
   const $ = (id) => document.getElementById(id);
   let settings = { ...DEFAULTS };
   let site = '';
@@ -26,7 +26,7 @@
     const pic = $('picture');
     if (!L) return;
     Object.assign(pic.style, { left: `${L.S.x}px`, top: `${L.S.y}px`, width: `${L.S.w}px`, height: `${L.S.h}px` });
-    $('previewFrame').innerHTML = buildSVG(L, settings, 'pv');
+    renderSVG($('previewFrame'), buildSVG(L, settings, 'pv'));
     $('previewFrame').querySelectorAll('.led').forEach((el) => el.setAttribute('fill', '#ff4a3a'));
     $('previewFrame').querySelectorAll('.led-glow').forEach((el) => el.setAttribute('opacity', '0.9'));
   }

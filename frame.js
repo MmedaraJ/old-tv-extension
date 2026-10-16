@@ -334,11 +334,41 @@
     return s;
   }
 
+  // Turn our own SVG markup into DOM nodes without innerHTML, which pages that
+  // enforce Trusted Types (YouTube does) refuse to run.
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const decode = (s) => s.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+  const TOKEN = /<(\/?)([a-zA-Z][\w-]*)((?:\s+[\w:-]+="[^"]*")*)\s*(\/?)>|([^<]+)/g;
+  const ATTR = /([\w:-]+)="([^"]*)"/g;
+
+  function render(target, markup) {
+    const frag = document.createDocumentFragment();
+    const stack = [frag];
+    TOKEN.lastIndex = 0;
+    let m;
+    while ((m = TOKEN.exec(markup))) {
+      const parent = stack[stack.length - 1];
+      if (m[5] !== undefined) {
+        parent.appendChild(document.createTextNode(decode(m[5])));
+      } else if (m[1]) {
+        if (stack.length > 1) stack.pop();
+      } else {
+        const el = document.createElementNS(SVGNS, m[2]);
+        ATTR.lastIndex = 0;
+        let a;
+        while ((a = ATTR.exec(m[3]))) if (a[1] !== 'xmlns') el.setAttribute(a[1], decode(a[2]));
+        parent.appendChild(el);
+        if (!m[4]) stack.push(el);
+      }
+    }
+    target.replaceChildren(frag);
+  }
+
   function setLed(root, on) {
     if (!root) return;
     root.querySelectorAll('.led').forEach((el) => el.setAttribute('fill', on ? '#ff4a3a' : '#4a1410'));
     root.querySelectorAll('.led-glow').forEach((el) => el.setAttribute('opacity', on ? '0.9' : '0'));
   }
 
-  globalThis.CRTFrame = { DEFAULTS, THEMES, computeLayout, buildSVG, setLed };
+  globalThis.CRTFrame = { DEFAULTS, THEMES, computeLayout, buildSVG, render, setLed };
 })();

@@ -20,6 +20,29 @@ A browser extension that frames YouTube videos, and most other videos on the web
 4. Click **Load unpacked** and pick the folder (the one that contains `manifest.json`).
 5. Open a YouTube video. Pin the extension icon to get to its settings.
 
+## Install on iPhone or iPad (Safari)
+
+Phone browsers can't load this extension, so on iOS the frame runs as a userscript in Safari: [`crt-tv-frame.user.js`](crt-tv-frame.user.js), built from the same code.
+
+1. Install the free [Userscripts](https://apps.apple.com/app/id1463298887) app from the App Store and open it once.
+2. Turn it on: **Settings → Apps → Safari → Extensions → Userscripts** (on iOS 17 and earlier: **Settings → Safari → Extensions**). Switch it on and set **All Websites** to **Allow**.
+3. In Safari, open
+   `https://raw.githubusercontent.com/MmedaraJ/old-tv-extension/main/crt-tv-frame.user.js`
+4. Tap the extensions button in the address bar (the puzzle piece, or **AA** on older iOS), tap **Userscripts**, then tap **Install**.
+5. Go to [m.youtube.com](https://m.youtube.com) in Safari and play a video.
+
+To change the style, open the Userscripts app, edit the settings block at the top of the script (`theme: 'red'`, `scanlines: 0` and so on), and save.
+
+Good to know:
+- **It has to be Safari.** Apple only lets Safari run extensions, so Brave, Chrome, Firefox and other browsers on iPhone and iPad can't show the frame. You can keep using Brave for everything else and open YouTube in Safari.
+- It doesn't work in the YouTube app. Nothing can change that app.
+- **iPhone:** fullscreen uses Apple's own video player, which nothing can draw on top of. The frame shows while the video plays in the page, in portrait or landscape, and goes away in fullscreen.
+- **iPad:** Safari loads YouTube's desktop layout, which gets the full knob-panel TV. YouTube fullscreens its whole player on iPad, so the frame should stay in fullscreen too.
+
+## Install on Android
+
+Use Firefox for Android: add [Violentmonkey](https://addons.mozilla.org/firefox/addon/violentmonkey/) from Firefox's add-ons menu, then open the `crt-tv-frame.user.js` link above and accept the install prompt.
+
 ## Settings (click the toolbar icon)
 
 <img src="screenshots/settings-popup.png" alt="Settings popup" width="320">
@@ -40,6 +63,8 @@ Changes apply right away to open tabs.
 ## How it works
 
 The content script finds every `<video>` and measures where the picture actually sits (it handles `object-fit` and players like YouTube that size the video element themselves). It then draws the TV as an SVG over the player. The SVG is see-through only where the screen is, and lets clicks pass through. If there's no black-bar space to put the frame in, it shrinks the picture slightly with CSS `scale`/`translate` so the frame doesn't cover any of the video. Turning the extension off puts everything back.
+
+The userscript is generated from `frame.js` and `content.js`. After changing those, rebuild it with `node scripts/build-userscript.mjs`. Don't run the extension and the userscript in the same browser, or you'll get two frames.
 
 ## Limitations
 

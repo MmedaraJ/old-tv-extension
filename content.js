@@ -4,7 +4,7 @@
   if (window.__crtTvFrameLoaded) return;
   window.__crtTvFrameLoaded = true;
 
-  const { DEFAULTS, computeLayout, buildSVG, setLed } = globalThis.CRTFrame;
+  const { DEFAULTS, computeLayout, buildSVG, render, setLed } = globalThis.CRTFrame;
   const MIN_W = 280;
   const MIN_H = 150;
   const TICK_MS = 300;
@@ -140,7 +140,7 @@
         const L = computeLayout(F.w, F.h, Cf, settings);
         if (!L) return this.detach();
         this.geomKey = key;
-        this.root.innerHTML = buildSVG(L, settings, this.id);
+        render(this.root, buildSVG(L, settings, this.id));
         setLed(this.root, !v.paused);
         // Move/shrink the picture so it sits exactly in the TV screen.
         const Ec = { x: E.x - F.x + E.w / 2, y: E.y - F.y + E.h / 2 };
@@ -267,6 +267,8 @@
   }
 
   function loadSettings(cb) {
+    // The userscript build has no extension storage; its settings are baked into DEFAULTS.
+    if (globalThis.CRTFrame.standalone) return cb && cb();
     try {
       chrome.storage.local.get(DEFAULTS, (s) => {
         settings = { ...DEFAULTS, ...(s || {}) };
@@ -279,9 +281,11 @@
   }
 
   try {
-    chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === 'local') loadSettings(schedule);
-    });
+    if (!globalThis.CRTFrame.standalone) {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local') loadSettings(schedule);
+      });
+    }
   } catch (e) { /* not running as an extension */ }
 
   for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, schedule, true);
