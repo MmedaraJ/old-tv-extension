@@ -11,6 +11,7 @@
     glass: true, // curved-glass vignette and glare
     panel: true, // side panel with knobs when there is room for it
     label: 'SOLID STATE',
+    tvMode: true, // iPhone: fullscreen button fills the window with the frame instead of Apple's player
   };
 
   const THEMES = {

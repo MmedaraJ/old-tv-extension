@@ -248,9 +248,148 @@
     }
   }
 
+  // iPhone Safari can only fullscreen a bare <video>, using Apple's own player, which
+  // nothing can draw over. There, the fullscreen button switches to "TV mode" instead:
+  // the player fills the window and keeps its frame.
+  const nativeOnlyFullscreen = !(document.fullscreenEnabled || document.webkitFullscreenEnabled) &&
+    typeof HTMLVideoElement.prototype.webkitEnterFullscreen === 'function';
+  const tv = { box: null, saved: [], exitBtn: null, hideTimer: 0, last: 0 };
+
+  function sameRect(a, b) {
+    return near(a.left, b.left) && near(a.top, b.top) && near(a.width, b.width) && near(a.height, b.height);
+  }
+
+  // The player plus any same-sized wrappers around it (YouTube's tap controls live in one).
+  function tvTarget(video) {
+    const player = video.closest('.html5-video-player') || video.parentElement;
+    if (!player) return null;
+    const r = player.getBoundingClientRect();
+    let box = player;
+    for (let el = player.parentElement; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+      if (!sameRect(el.getBoundingClientRect(), r)) break;
+      box = el;
+    }
+    return { player, box };
+  }
+
+  function forceStyles(el, props) {
+    const prev = {};
+    for (const p of Object.keys(props)) prev[p] = [el.style.getPropertyValue(p), el.style.getPropertyPriority(p)];
+    for (const [p, v] of Object.entries(props)) el.style.setProperty(p, v, 'important');
+    tv.saved.push([el, prev]);
+  }
+
+  function nudgeLayout() {
+    window.dispatchEvent(new Event('resize'));
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
+    schedule();
+  }
+
+  function showExitButton() {
+    const b = tv.exitBtn;
+    if (!b) return;
+    b.style.setProperty('opacity', '0.8', 'important');
+    b.style.setProperty('pointer-events', 'auto', 'important');
+    clearTimeout(tv.hideTimer);
+    tv.hideTimer = setTimeout(() => {
+      b.style.setProperty('opacity', '0', 'important');
+      b.style.setProperty('pointer-events', 'none', 'important');
+    }, 3000);
+  }
+
+  function enterTv(video) {
+    const t = tvTarget(video);
+    if (!t || tv.box) return;
+    tv.box = t.box;
+    forceStyles(document.documentElement, { overflow: 'hidden' });
+    if (document.body) forceStyles(document.body, { overflow: 'hidden' });
+    const fill = { margin: '0', padding: '0', transform: 'none', 'max-width': 'none', 'max-height': 'none', 'min-width': '0', 'min-height': '0' };
+    forceStyles(t.box, {
+      ...fill, position: 'fixed', left: '0', top: '0', right: 'auto', bottom: 'auto', width: '100vw',
+      height: CSS.supports('height', '100dvh') ? '100dvh' : '100vh', 'z-index': '2147483000', background: '#000',
+    });
+    for (let el = t.player; el && el !== t.box; el = el.parentElement) {
+      forceStyles(el, { ...fill, position: 'absolute', left: '0', top: '0', width: '100%', height: '100%' });
+    }
+    const b = document.createElement('crt-tv-exit');
+    b.textContent = '✕ Exit TV';
+    b.setAttribute('role', 'button');
+    b.style.cssText = 'position:absolute!important;top:10px!important;left:50%!important;transform:translateX(-50%)!important;' +
+      'z-index:2147483647!important;display:block!important;padding:7px 14px!important;border-radius:999px!important;' +
+      'background:rgba(0,0,0,.6)!important;color:#fff!important;font:600 13px/1 -apple-system,system-ui,sans-serif!important;' +
+      'cursor:pointer!important;transition:opacity .3s!important;-webkit-tap-highlight-color:transparent;';
+    b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); exitTv(); }, true);
+    t.box.appendChild(b);
+    tv.exitBtn = b;
+    t.box.addEventListener('click', showExitButton, true);
+    showExitButton();
+    nudgeLayout();
+  }
+
+  function exitTv() {
+    if (!tv.box) return;
+    for (const [el, prev] of tv.saved.reverse()) {
+      for (const [p, [val, prio]] of Object.entries(prev)) {
+        if (val) el.style.setProperty(p, val, prio);
+        else el.style.removeProperty(p);
+      }
+    }
+    tv.box.removeEventListener('click', showExitButton, true);
+    clearTimeout(tv.hideTimer);
+    if (tv.exitBtn) tv.exitBtn.remove();
+    Object.assign(tv, { box: null, saved: [], exitBtn: null });
+    nudgeLayout();
+  }
+
+  function toggleTv(video) {
+    const now = Date.now();
+    if (now - tv.last < 700) return; // one tap can arrive as both a click and a native-fullscreen request
+    tv.last = now;
+    if (tv.box) exitTv();
+    else enterTv(video);
+  }
+
+  const tvModeOn = () => nativeOnlyFullscreen && settings.tvMode !== false && isActive();
+
+  function fullscreenButton(target) {
+    const b = target && target.closest && target.closest('button, [role="button"]');
+    if (!b) return null;
+    const text = `${b.getAttribute('aria-label') || ''} ${b.getAttribute('title') || ''} ${b.getAttribute('class') || ''}`;
+    return /full\s*-?\s*screen/i.test(text) ? b : null;
+  }
+
+  function videoNear(el) {
+    for (const v of controllers.keys()) {
+      const t = v.isConnected && tvTarget(v);
+      if (t && (t.box.contains(el) || (tv.box && tv.box.contains(el)))) return v;
+    }
+    return null;
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!tvModeOn()) return;
+    const b = fullscreenButton(e.target);
+    const v = b && videoNear(b);
+    if (!v) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    toggleTv(v);
+  }, true);
+
+  // Backup: if Apple's player opens anyway (another tap path, a gesture), close it and use TV mode.
+  document.addEventListener('webkitbeginfullscreen', (e) => {
+    const v = e.target;
+    if (!tvModeOn() || !(v instanceof HTMLVideoElement)) return;
+    const close = () => { try { if (v.webkitDisplayingFullscreen) v.webkitExitFullscreen(); } catch (err) { /* ignore */ } };
+    setTimeout(close, 0);
+    setTimeout(close, 400);
+    toggleTv(v);
+  }, true);
+
   const videos = document.getElementsByTagName('video');
 
   function tick() {
+    if (tv.box && (!tv.box.isConnected || !tvModeOn())) exitTv();
     for (const v of videos) {
       if (!controllers.has(v)) controllers.set(v, new Controller(v));
     }

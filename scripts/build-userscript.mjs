@@ -35,6 +35,7 @@ const CRT_TV_FRAME_SETTINGS = {
   glass: true, // curved-glass vignette and glare
   panel: true, // side knob panel when there's room
   label: 'SOLID STATE', // badge text on the set
+  tvMode: true, // iPhone: the fullscreen button keeps the TV frame (fills the window) instead of Apple's player
   disabledSites: [], // e.g. ['www.example.com']
 };
 // ---------------------------------------

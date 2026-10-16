@@ -36,7 +36,7 @@ To change the style, open the Userscripts app, edit the settings block at the to
 Good to know:
 - **It has to be Safari.** Apple only lets Safari run extensions, so Brave, Chrome, Firefox and other browsers on iPhone and iPad can't show the frame. You can keep using Brave for everything else and open YouTube in Safari.
 - It doesn't work in the YouTube app. Nothing can change that app.
-- **iPhone:** fullscreen uses Apple's own video player, which nothing can draw on top of. The frame shows while the video plays in the page, in portrait or landscape, and goes away in fullscreen.
+- **iPhone fullscreen = TV mode.** iPhone's real fullscreen hands the video to Apple's own player, which nothing can draw on. So on iPhone, YouTube's fullscreen button switches to TV mode instead: the player fills Safari's window with the frame on. Turn the phone sideways for the full set. Tap fullscreen again, or **Exit TV**, to go back. To use Apple's player instead, set `tvMode: false` in the script settings.
 - **iPad:** Safari loads YouTube's desktop layout, which gets the full knob-panel TV. YouTube fullscreens its whole player on iPad, so the frame should stay in fullscreen too.
 
 ## Install on Android
